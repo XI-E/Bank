@@ -4,15 +4,17 @@
 #include <iomanip.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 
 class Account{
 	public:
 		Account(void){};            // Default constructor
-		Account(char *, char *);    // New Account constructor
-		Account(Account *);         // Copy constructor
+		Account(char *, char *);    // Initialising constructor
 
-		friend void init();
+		friend void init();         // gets data from files
+		friend void wrap();			// writes changed data to files
+		friend void prt(const char *, int);
 		void getname();             // Prints name of account holder
 		void getacc();              // Prints account number
 		void getbal();              // Prints balance
@@ -27,19 +29,24 @@ class Account{
 		}
 
 	private:
-		char holder[100];           // ENCRYPTED till login()
+		char holder[30];            // ENCRYPTED till login()
 		int acc_num;                // Account number
-		unsigned long int bal;      // Current account balance [ENCRYPTED]
+		double bal;                 // Current account balance [ENCRYPTED]
 		char key[7];                // Holds encryption key for account(basically, password)
 };
 
-int max_acc;                        // Currently opened accounts(num)
+Account account[100];
+
+int max_acc = 0, max_acc_prev;      // Currently opened accounts(total)
 
 int h,w;							// Height and width of screen
+
+int inp_acc;			    		// accessed account number
 
 int main(){
 
 	void frame();
+	init();
 
 	struct text_info info;
 	gettextinfo(&info);
@@ -47,44 +54,271 @@ int main(){
 	h = ( (int) info.screenheight) - 2;
 	w = ( (int) info.screenwidth) - 2;
 
+	int inp;
+
+	start:
+
 	clrscr();
+	textcolor(LIGHTGRAY);
 
 	frame();
+	prt("Welcome to ABC Bank!", 9);
+	prt("Please choose desired option", wherey()+1);
+	gotoxy(((w - strlen("Please choose desired option"))/2+1), wherey()+1);
+	cprintf("%s", "1. Access account");
+	gotoxy(((w - strlen("Please choose desired option"))/2+1), wherey()+1);
+	cprintf("%s", "2. Open account");
+	gotoxy(((w - strlen("Please choose desired option"))/2+1), wherey()+1);
+	cprintf("%s", "3. Quit");
+	prt("Enter choice : ", wherey()+2);
 
+	inp = getch();
 
-	getch();
+	switch((int) inp){
+		case 49:
+			goto access;
+		case 50:
+			goto open;
+		case 51:
+			goto exit;
+		default:
+			textcolor(LIGHTRED);
+			prt("Invalid choice!!", wherey()+2);
+			getch();
+			goto start;
+	}
+
+	access:
+	{
+		char key[7];
+		clrscr();
+		frame();
+		prt("Accessing existing account", 9);
+		prt("Enter account number for your account", wherey()+1);
+		gotoxy(w/2 - 1, wherey()+1);
+
+		while(1)
+		{
+			cin >> inp_acc;
+			if(inp_acc>0 && inp_acc<=max_acc){
+				break;
+			}
+			else{
+				textcolor(LIGHTRED);
+				prt("Invalid input!!", wherey()+1);
+				getch();
+				goto access;
+			}
+		}
+
+		pass:
+
+		clrscr();
+		frame();
+		prt("Enter key for account", 9);
+		gotoxy(w/2 - 3, wherey()+1);
+		int counter = 0;
+		for(int i=0; i<9999; i++){
+			if(counter > 5){
+				if(!account[inp_acc-1].login(key)){
+					textcolor(LIGHTRED);
+					prt("Invalid key!! Please retry, enter ~ to quit", wherey()+2);
+					getch();
+					goto pass;
+				}
+				else{
+					textcolor(LIGHTGREEN);
+					prt("Login success!!", wherey()+2);
+					getch();
+					goto acc_success;
+				}
+			}
+			char ch = getch();
+			if(ch=='~'){
+				goto exit;
+			}
+			if(ch=='\b'){
+				cprintf("%c", '\b');
+				counter--;
+				continue;
+			}
+			if(isalpha(ch)){
+				key[counter] = ch;
+				textcolor(YELLOW);
+				cprintf("%c",'*');
+				counter++;
+			}
+			else{
+				continue;
+			}
+
+		}
+
+	}
+
+	open:
+	{
+		char holder[30], key[7];
+
+		clrscr();
+		frame();
+		prt("Opening new account", 9);
+		prt("Enter account holder name(max 30 letters)", wherey()+1);
+		gotoxy(w/2 - 12, wherey()+1);
+		int counter = 0;
+		for(int i=0; i<999; i++){
+			if(counter>28){
+				break;
+			}
+			char ch = getch();
+			if(ch=='\n' || ch=='\r'){
+				if(counter > 0){
+					break;
+				}
+			}
+			if(ch=='\b'){
+				cprintf("%c", '\b');
+				counter--;
+				continue;
+			}
+			if(isalpha(ch) || ch == ' '){
+				holder[counter++] = ch;
+				cprintf("%c", ch);
+			}
+			else{
+				continue;
+			}
+		}
+
+		clrscr();
+		frame();
+		prt("Opening new account", 9);
+		prt("Enter account key(6 letters)", wherey()+1);
+		gotoxy(w/2 - 3, wherey()+1);
+		counter = 0;
+		for(i=0; i<999; i++){
+			if(counter>5){
+				char b[7];
+				for(int k=0; k<6; k++){
+					b[k] = key[k];
+				}
+				b[6] = (char) 0;
+				Account acc(holder, b);
+				account[max_acc - 1] = acc;
+				textcolor(LIGHTGRAY);
+				prt("Account opened with account number ", wherey()+2);
+				textcolor(WHITE);
+				acc.getacc();
+				getch();
+				break;
+			}
+			char ch = getch();
+			if(ch=='\b'){
+				cprintf("%c", '\b');
+				counter--;
+				continue;
+			}
+			if(ch>=65 && ch<=122){
+				key[counter++] = ch;
+				textcolor(YELLOW);
+				cprintf("%c",'*');
+			}
+			else{
+				continue;
+			}
+		}
+
+		goto start;
+	}
+
+	acc_success:
+	{
+		long int amount;
+
+		clrscr();
+		frame();
+		prt("Accessing account #", 3);
+		account[inp_acc-1].getacc();
+		gotoxy(w/2 - 17, wherey()+1);
+		cprintf("%s", "Balance  Rs. ");
+		account[inp_acc].getbal();
+
+		prt("Choose desired task", wherey()+2);
+		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
+		cprintf("%s", "1. Deposit money");
+		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
+		cprintf("%s", "2. Withdraw money");
+		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
+		cprintf("%s", "3. Quit");
+
+		int inp2 = getch();
+
+		switch(inp2){
+		case 49:
+			prt("Enter amount", wherey()+2);
+			gotoxy(w/2 - 3, wherey()+1);
+			cin >> amount;
+			account[inp_acc].trans(abs(amount));
+			getch();
+			goto acc_success;
+		case 51:
+			goto exit;
+		case 50:
+			prt("Enter amount", wherey()+2);
+			gotoxy(w/2 - 3, wherey()+1);
+			cin >> amount;
+			account[inp_acc].trans(-abs(amount));
+			getch();
+			goto acc_success;
+		default:
+			textcolor(LIGHTRED);
+			prt("Invalid choice!!", wherey()+2);
+			getch();
+			goto acc_success;
+		}
+	}
+
+	exit:
+	wrap();
 	return 0;
 }
 
-Account::Account(char * hld, char * pass){  	// Holder name & password
-	strcpy(holder, hld);
-	strcpy(key, pass);
+void Account::Account(char * hld, char * pass){
+	for(int i=0; i<30; i++){
+		holder[i] = hld[i];
+	}
+	for(i=0; i<7; i++){
+		key[i] = pass[i];
+	}
 	acc_num = ++max_acc;
 	bal = 0;
-	encrypt();
 }
 
 void Account::trans(int a){
+	if(a<0){
+		if(bal<abs(a)){
+			textcolor(LIGHTRED);
+			prt("Withdrawl fail! Invalid amount!", wherey() + 2);
+			getch();
+			goto ex;
+		}
+	}
 	bal += a;
 	if(a>0){
-		gotoxy((w - strlen("Deposit successful!"))/2,(wherey()+2));
-		textcolor(2);
-		cprintf("%s","Desposit successful!");
-		textcolor(7);
+		textcolor(LIGHTGREEN);
+		prt("Deposit successful!", wherey() + 2);
 	}
-	else if(a>0){
-		gotoxy((w - strlen("Withdrawl successful!"))/2,(wherey()+2));
-		textcolor(2);
-		cprintf("%s","Withdrawl successful!");
-		textcolor(7);
+	else if(a<0){
+		textcolor(LIGHTGREEN);
+		prt("Withdrawl successful!", wherey() + 2);
 	}
 
-	gotoxy((w - strlen("New balance is"))/2,(wherey()+2));
-	cout << "New balance is";
-	gotoxy((w/2 - 12), wherey()+1);
+	prt("New balance is", wherey()+2);
+	gotoxy((w/2 - 8), wherey()+1);
 	cout << "Rs. ";
-	setw(9);
+	//setw(9);
 	cout << bal;
+	ex:
 }
 
 void Account::getname(){
@@ -102,12 +336,17 @@ void Account::getbal(){
 int Account::login(char * a){
 	int match_counter = 0;
 	int i,j,d;
+	char b[6];
+	for(int k=0; k<6; k++){
+		b[k] = a[k];
+	}
+	b[6] = (char) 0;
 	for(i=0; i<7; i++){
-		if(a[i] == key[i]){
+		if(strcmp(b, key)){
 			match_counter++;
 		}
 	}
-	if(match_counter == 7){
+	if(match_counter != 0){
 		goto decrypt;
 	}
 	else{
@@ -115,7 +354,7 @@ int Account::login(char * a){
 	}
 
 	decrypt:
-			for(j=0; j<100; j++){
+			for(j=0; j<30; j++){
 				d = (int) key[j%7];
 				holder[j] -= d;
 				bal += d;
@@ -127,7 +366,7 @@ int Account::login(char * a){
 }
 
 void Account::encrypt(){
-	for(int j=0; j<100; j++){
+	for(int j=0; j<30; j++){
 		int d = (int) key[j%7];
 		holder[j] += d;
 		bal -= d;
@@ -135,7 +374,96 @@ void Account::encrypt(){
 }
 
 void init(){
+	ifstream hld ("holder.txt");
+	for(int i=0; i<100; i++){
+		for(int j=0; j<50; j++){
+			char ch;
+			hld >> ch;
+			if(hld.eof()){
+				max_acc = i+1;
+				max_acc_prev = max_acc;
+				i=100;
+				break;
+			}
+			if(ch=='\n'){
+				break;
+			}
+			account[i].holder[j] = ch;
+		}
+	}
+	hld.close();
 
+	ifstream key ("key.txt");
+	for(i=0; i<100; i++){
+		for(int j=0; j<10; j++){
+			char ch;
+			key >> ch;
+			if(key.eof()){
+				i=100;
+				break;
+			}
+			if(ch=='\n'){
+				break;
+			}
+			account[i].key[j] = ch;
+		}
+	}
+	key.close();
+
+	ifstream bal ("balance.txt");
+	for(i=0; i<100; i++){
+		long int a;
+		bal >> a;
+		if(bal.eof()){
+			i=100;
+			break;
+		}
+		account[i].bal = a;
+	}
+	bal.close();
+
+	for(i=0; i<max_acc; i++){
+		account[i].acc_num = i+1;
+	}
+
+	strcpy(account[0].holder, "sankalp");
+	strcpy(account[0].key, "abcdef");
+	account[0].acc_num = 1;
+	account[0].bal = 10000;
+	max_acc = 1;
+}
+
+void wrap(){
+	if(max_acc_prev<max_acc){
+		ofstream hld("holder.txt", ios::app);
+		hld << '\n';
+		for(int i=0; i<50; i++){
+			if(account[max_acc-1].holder[i]!='\0'){
+				hld << account[max_acc-1].holder[i];
+			}
+		}
+		hld.close();
+
+		ofstream key("key.txt", ios::app);
+		key << '\n';
+		for(i=0; i<10; i++){
+			if(account[max_acc-1].holder[i]!='\0'){
+				key << account[max_acc-1].key[i];
+			}
+		}
+		key.close();
+
+		ofstream bal("balance.txt", ios::app);
+		bal << '\n';
+		bal << account[max_acc-1].holder[i];
+		bal.close();
+	}
+}
+
+void prt(const char * a, int b){
+	gotoxy((w-strlen(a))/2, b);
+	cprintf("%s", a);
+	textcolor(LIGHTGRAY);
 }
 
 void frame()
