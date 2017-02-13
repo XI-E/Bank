@@ -19,6 +19,12 @@ class Account{
 		void trans(int);            // Alters balance for deposit/withdrawl
 		void encrypt();				// Re-encrypts data for storage
 		int login(char *);          // Decrypts name and balance as per given key
+		void operator = (Account & a){
+			strcpy(holder, a.holder);
+			strcpy(key, a.key);
+			bal = a.bal;
+			acc_num = a.acc_num;
+		}
 
 	private:
 		char holder[100];           // ENCRYPTED till login()
@@ -56,13 +62,6 @@ Account::Account(char * hld, char * pass){  	// Holder name & password
 	acc_num = ++max_acc;
 	bal = 0;
 	encrypt();
-}
-
-ofstream& operater=(Account * a, Account * b){
-	strcopy(b::holder, a::holder);
-	strcopy(b::key, a::holder);
-	b::bal = a::bal;
-	b::acc_num = a::acc_num;
 }
 
 void Account::trans(int a){
@@ -150,7 +149,7 @@ void frame()
 	for(i = 2; i <= h - 2; i++)
 	{
 		gotoxy(1, i); cout << '*';
-		gotoxy(width, i); cout << '*';
+		gotoxy(w, i); cout << '*';
 	}
 
 	gotoxy(1, h - 1);

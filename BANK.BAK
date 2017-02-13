@@ -10,7 +10,7 @@ class Account{
 	public:
 		Account(void){};            // Default constructor
 		Account(char *, char *);    // New Account constructor
-		Account(char *);            // Copy constructor
+		Account(Account *);         // Copy constructor
 
 		friend void init();
 		void getname();             // Prints name of account holder
@@ -43,6 +43,9 @@ int main(){
 
 	clrscr();
 
+	frame();
+
+
 	getch();
 	return 0;
 }
@@ -50,7 +53,16 @@ int main(){
 Account::Account(char * hld, char * pass){  	// Holder name & password
 	strcpy(holder, hld);
 	strcpy(key, pass);
+	acc_num = ++max_acc;
+	bal = 0;
 	encrypt();
+}
+
+ofstream& operater=(Account * a, Account * b){
+	strcopy(b::holder, a::holder);
+	strcopy(b::key, a::holder);
+	b::bal = a::bal;
+	b::acc_num = a::acc_num;
 }
 
 void Account::trans(int a){
