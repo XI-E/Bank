@@ -1,5 +1,6 @@
 #include <iostream.h>
 #include <fstream.h>
+#include <stdio.h>
 #include <conio.h>
 #include <iomanip.h>
 #include <string.h>
@@ -62,7 +63,7 @@ int main(){
 	textcolor(LIGHTGRAY);
 
 	frame();
-	prt("Welcome to ABC Bank!", 9);
+	prt("Welcome to ABC Bank!", 9);init();
 	prt("Please choose desired option", wherey()+1);
 	gotoxy(((w - strlen("Please choose desired option"))/2+1), wherey()+1);
 	cprintf("%s", "1. Access account");
@@ -100,6 +101,14 @@ int main(){
 		while(1)
 		{
 			cin >> inp_acc;
+			if(cin.fail()){
+				textcolor(LIGHTRED);
+				prt("Invalid input!!", wherey()+1);
+				getch();
+				cin.clear();
+				cin.ignore(100, '\n');
+				goto access;
+			}
 			if(inp_acc>0 && inp_acc<=max_acc){
 				break;
 			}
@@ -120,17 +129,17 @@ int main(){
 		int counter = 0;
 		for(int i=0; i<9999; i++){
 			if(counter > 5){
-				if(!account[inp_acc-1].login(key)){
-					textcolor(LIGHTRED);
-					prt("Invalid key!! Please retry, enter ~ to quit", wherey()+2);
-					getch();
-					goto pass;
-				}
-				else{
+				if(account[inp_acc-1].login(key) == 0){
 					textcolor(LIGHTGREEN);
 					prt("Login success!!", wherey()+2);
 					getch();
 					goto acc_success;
+				}
+				else{
+					textcolor(LIGHTRED);
+					prt("Invalid key!! Please retry, enter ~ to quit", wherey()+2);
+					getch();
+					goto pass;
 				}
 			}
 			char ch = getch();
@@ -237,11 +246,15 @@ int main(){
 
 		clrscr();
 		frame();
-		prt("Accessing account #", 3);
+		prt("Accessing account #", 2);
 		account[inp_acc-1].getacc();
+		prt("Account Holder", wherey()+1);
+		gotoxy(w/2 - 8, wherey()+1);
+		textcolor(WHITE);
+		account[inp_acc-1].getname();
 		gotoxy(w/2 - 17, wherey()+1);
 		cprintf("%s", "Balance  Rs. ");
-		account[inp_acc].getbal();
+		account[inp_acc-1].getbal();
 
 		prt("Choose desired task", wherey()+2);
 		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
@@ -249,7 +262,7 @@ int main(){
 		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
 		cprintf("%s", "2. Withdraw money");
 		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
-		cprintf("%s", "3. Quit");
+		cprintf("%s", "3. Log out");
 
 		int inp2 = getch();
 
@@ -257,17 +270,18 @@ int main(){
 		case 49:
 			prt("Enter amount", wherey()+2);
 			gotoxy(w/2 - 3, wherey()+1);
-			cin >> amount;
-			account[inp_acc].trans(abs(amount));
+			cin >> amount;	cin.ignore(100, '\n');
+			account[inp_acc-1].trans(abs(amount));
 			getch();
 			goto acc_success;
 		case 51:
-			goto exit;
+			account[inp_acc-1].encrypt();
+			goto start;
 		case 50:
 			prt("Enter amount", wherey()+2);
 			gotoxy(w/2 - 3, wherey()+1);
-			cin >> amount;
-			account[inp_acc].trans(-abs(amount));
+			cin >> amount;	cin.ignore(100, '\n');
+			account[inp_acc-1].trans(-abs(amount));
 			getch();
 			goto acc_success;
 		default:
@@ -334,47 +348,48 @@ void Account::getbal(){
 }
 
 int Account::login(char * a){
-	int match_counter = 0;
-	int i,j,d;
+	int match = 0;
+	int i,j;
 	char b[6];
 	for(int k=0; k<6; k++){
 		b[k] = a[k];
 	}
 	b[6] = (char) 0;
-	for(i=0; i<7; i++){
-		if(strcmp(b, key)){
-			match_counter++;
-		}
+
+	if(strncmp(b, key, 6) == 0){
+		match++;
 	}
-	if(match_counter != 0){
+
+	if(match == 1){
 		goto decrypt;
 	}
 	else{
-		goto fail;
+		return 1;
 	}
 
 	decrypt:
 			for(j=0; j<30; j++){
-				d = (int) key[j%7];
-				holder[j] -= d;
-				bal += d;
+				int m = j%7;
+				char d = key[m];
+				holder[j] -= (int) d;
+				bal -= (int) d;
 			}
 			return 0;
-
-	fail:
-			return 1;
 }
 
 void Account::encrypt(){
 	for(int j=0; j<30; j++){
-		int d = (int) key[j%7];
-		holder[j] += d;
-		bal -= d;
+		int m = j%7;
+		char d = key[m];
+		holder[j] += (int) d;
+		bal += (int) d;
 	}
 }
 
 void init(){
-	ifstream hld ("holder.txt");
+	ifstream hld;
+	hld.open("holder.txt");
+
 	for(int i=0; i<100; i++){
 		for(int j=0; j<50; j++){
 			char ch;
@@ -394,12 +409,12 @@ void init(){
 	hld.close();
 
 	ifstream key ("key.txt");
-	for(i=0; i<100; i++){
+	for(i=0; i<1000; i++){
 		for(int j=0; j<10; j++){
 			char ch;
 			key >> ch;
 			if(key.eof()){
-				i=100;
+				i=1000;
 				break;
 			}
 			if(ch=='\n'){
@@ -426,11 +441,12 @@ void init(){
 		account[i].acc_num = i+1;
 	}
 
-	strcpy(account[0].holder, "sankalp");
+	strcpy(account[0].holder, "Sankalp Gambhir");
 	strcpy(account[0].key, "abcdef");
 	account[0].acc_num = 1;
 	account[0].bal = 10000;
 	max_acc = 1;
+	account[0].encrypt();
 }
 
 void wrap(){
