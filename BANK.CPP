@@ -1,11 +1,15 @@
 #include <iostream.h>
 #include <fstream.h>
+#include <io.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <conio.h>
 #include <iomanip.h>
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <fcntl.h>
+#include <sys\stat.h>
 
 
 class Account{
@@ -387,59 +391,6 @@ void Account::encrypt(){
 }
 
 void init(){
-	ifstream hld;
-	hld.open("holder.txt");
-
-	for(int i=0; i<100; i++){
-		for(int j=0; j<50; j++){
-			char ch;
-			hld >> ch;
-			if(hld.eof()){
-				max_acc = i+1;
-				max_acc_prev = max_acc;
-				i=100;
-				break;
-			}
-			if(ch=='\n'){
-				break;
-			}
-			account[i].holder[j] = ch;
-		}
-	}
-	hld.close();
-
-	ifstream key ("key.txt");
-	for(i=0; i<1000; i++){
-		for(int j=0; j<10; j++){
-			char ch;
-			key >> ch;
-			if(key.eof()){
-				i=1000;
-				break;
-			}
-			if(ch=='\n'){
-				break;
-			}
-			account[i].key[j] = ch;
-		}
-	}
-	key.close();
-
-	ifstream bal ("balance.txt");
-	for(i=0; i<100; i++){
-		long int a;
-		bal >> a;
-		if(bal.eof()){
-			i=100;
-			break;
-		}
-		account[i].bal = a;
-	}
-	bal.close();
-
-	for(i=0; i<max_acc; i++){
-		account[i].acc_num = i+1;
-	}
 
 	strcpy(account[0].holder, "Sankalp Gambhir");
 	strcpy(account[0].key, "abcdef");
@@ -450,30 +401,30 @@ void init(){
 }
 
 void wrap(){
-	if(max_acc_prev<max_acc){
-		ofstream hld("holder.txt", ios::app);
-		hld << '\n';
-		for(int i=0; i<50; i++){
-			if(account[max_acc-1].holder[i]!='\0'){
-				hld << account[max_acc-1].holder[i];
-			}
-		}
-		hld.close();
+	int hld_file, key_file, bal_file;
 
-		ofstream key("key.txt", ios::app);
-		key << '\n';
-		for(i=0; i<10; i++){
-			if(account[max_acc-1].holder[i]!='\0'){
-				key << account[max_acc-1].key[i];
-			}
-		}
-		key.close();
-
-		ofstream bal("balance.txt", ios::app);
-		bal << '\n';
-		bal << account[max_acc-1].holder[i];
-		bal.close();
+	if ((hld_file = open("HOLDER.TXT", O_RDONLY | O_APPEND,
+					  S_IREAD | S_IWRITE)) == -1)
+	{
+		printf("Error opening file.\n");
 	}
+	if ((key_file = open("KEY.TXT", O_RDONLY | O_APPEND,
+					  S_IREAD | S_IWRITE)) == -1)
+	{
+		printf("Error opening file.\n");
+	}
+	if ((bal_file = open("BAL.TXT", O_RDONLY | O_APPEND,
+					  S_IREAD | S_IWRITE)) == -1)
+	{
+	  printf("Error opening file.\n");
+	}
+
+	write(hld_file, account[max_acc-1].holder, strlen(account[max_acc-1].holder));
+	write(key_file, account[max_acc-1].key, strlen(account[max_acc-1].key));
+	char buff[65];
+	itoa(account[max_acc-1].bal, buff, 10);
+	write(bal_file, buff, strlen(buff));
+
 }
 
 void prt(const char * a, int b){
