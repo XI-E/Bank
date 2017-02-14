@@ -246,7 +246,7 @@ int main(){
 
 	acc_success:
 	{
-		long int amount;
+		double amount;
 
 		clrscr();
 		frame();
