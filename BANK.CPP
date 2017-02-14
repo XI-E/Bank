@@ -23,7 +23,7 @@ class Account{
 		void getname();             // Prints name of account holder
 		void getacc();              // Prints account number
 		void getbal();              // Prints balance
-		void trans(int);            // Alters balance for deposit/withdrawl
+		void trans(double);         // Alters balance for deposit/withdrawl
 		void encrypt();				// Re-encrypts data for storage
 		int login(char *);          // Decrypts name and balance as per given key
 		void operator = (Account & a){
@@ -312,7 +312,7 @@ void Account::Account(char * hld, char * pass){
 	bal = 0;
 }
 
-void Account::trans(int a){
+void Account::trans(double a){
 	if(a<0){
 		if(bal<abs(a)){
 			textcolor(LIGHTRED);
