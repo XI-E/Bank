@@ -1,16 +1,17 @@
-#include <iostream.h>
-#include <fstream.h>
-#include <io.h>
+#include <iostream>
+#include <fstream>
 #include <stdio.h>
-#include <stdlib.h>
-#include <conio.h>
-#include <iomanip.h>
-#include <string.h>
+#include <cstdlib>
+#include <iomanip>
+#include <string>
 #include <ctype.h>
 #include <math.h>
-#include <fcntl.h>
-#include <sys\stat.h>
+#include "rlutil.h"
 
+typedef long long ll;
+
+using namespace std;
+using namespace rlutil;
 
 class Account{
 	public:
@@ -19,11 +20,11 @@ class Account{
 
 		friend void init();         // gets data from files
 		friend void wrap();			// writes changed data to files
-		friend void prt(const char *, int);
-		void getname();             // Prints name of account holder
-		void getacc();              // Prints account number
-		void getbal();              // Prints balance
-		void trans(double);         // Alters balance for deposit/withdrawl
+		friend void prt(string);
+		string getname();           // returns name of account holder
+		unsigned getacc();          // returns account number
+		ll getbal();                // returns balance
+		void trans(long long);      // Alters balance for deposit/withdrawl
 		void encrypt();				// Re-encrypts data for storage
 		int login(char *);          // Decrypts name and balance as per given key
 		void operator = (Account & a){
@@ -34,10 +35,10 @@ class Account{
 		}
 
 	private:
-		char holder[30];            // ENCRYPTED till login()
-		int acc_num;                // Account number
-		double bal;                 // Current account balance [ENCRYPTED]
-		char key[7];                // Holds encryption key for account(basically, password)
+		char holder[30];             // ENCRYPTED till login()
+		unsigned acc_num;            // Account number
+		ll bal;                      // Current account balance [ENCRYPTED]
+		char key[7];                 // Holds encryption key for account(basically, password)
 };
 
 Account account[100];
@@ -48,34 +49,37 @@ int h,w;							// Height and width of screen
 
 int inp_acc;			    		// accessed account number
 
+void init();
+void wrap();
+void prt(string);
+void frame();
+
 int main(){
 
-	void frame();
 	init();
 
-	struct text_info info;
-	gettextinfo(&info);
-
-	h = ( (int) info.screenheight) - 2;
-	w = ( (int) info.screenwidth) - 2;
+	h = rlutil::trows();
+	w = rlutil::tcols();
 
 	int inp;
 
 	start:
 
-	clrscr();
-	textcolor(LIGHTGRAY);
+	rlutil::cls();
+    rlutil::setColor(WHITE);
 
 	frame();
-	prt("Welcome to ABC Bank!", 9);init();
-	prt("Please choose desired option", wherey()+1);
-	gotoxy(((w - strlen("Please choose desired option"))/2+1), wherey()+1);
-	cprintf("%s", "1. Access account");
-	gotoxy(((w - strlen("Please choose desired option"))/2+1), wherey()+1);
-	cprintf("%s", "2. Open account");
-	gotoxy(((w - strlen("Please choose desired option"))/2+1), wherey()+1);
-	cprintf("%s", "3. Quit");
-	prt("Enter choice : ", wherey()+2);
+	gotoxy(0,8);
+	cout << endl;
+	prt("Welcome to ABC Bank!"); cout << endl;
+	prt("Please choose desired option");
+	gotoxy(((w - strlen("Please choose desired option"))/2+1), 11);
+	cout << "1. Access account";
+	gotoxy(((w - strlen("Please choose desired option"))/2+1), 12);
+	cout << "2. Open account";
+	gotoxy(((w - strlen("Please choose desired option"))/2+1), 13);
+	cout << "3. Quit" << endl << endl;
+	prt("Enter choice : ");
 
 	inp = getch();
 
@@ -87,8 +91,8 @@ int main(){
 		case 51:
 			goto exit;
 		default:
-			textcolor(LIGHTRED);
-			prt("Invalid choice!!", wherey()+2);
+			rlutil::setColor(LIGHTRED);
+			prt("Invalid choice!!");
 			getch();
 			goto start;
 	}
@@ -96,18 +100,18 @@ int main(){
 	access:
 	{
 		char key[7];
-		clrscr();
+		rlutil::cls();
 		frame();
-		prt("Accessing existing account", 9);
-		prt("Enter account number for your account", wherey()+1);
-		gotoxy(w/2 - 1, wherey()+1);
+		gotoxy(0,9);
+		prt("Accessing existing account"); cout << endl;
+		prt("Enter account number for your account"); cout << endl << endl;
 
 		while(1)
 		{
 			cin >> inp_acc;
 			if(cin.fail()){
-				textcolor(LIGHTRED);
-				prt("Invalid input!!", wherey()+1);
+				rlutil::setColor(LIGHTRED);
+				prt("Invalid input!!");
 				getch();
 				cin.clear();
 				cin.ignore(100, '\n');
@@ -117,8 +121,8 @@ int main(){
 				break;
 			}
 			else{
-				textcolor(LIGHTRED);
-				prt("Invalid input!!", wherey()+1);
+				rlutil::setColor(LIGHTRED);
+				prt("Invalid input!!");
 				getch();
 				goto access;
 			}
@@ -126,22 +130,23 @@ int main(){
 
 		pass:
 
-		clrscr();
+		rlutil::cls();
 		frame();
-		prt("Enter key for account", 9);
-		gotoxy(w/2 - 3, wherey()+1);
+		gotoxy(0,9);
+		prt("Enter key for account"); cout << endl;
 		int counter = 0;
 		for(int i=0; i<9999; i++){
 			if(counter > 5){
+                cout << endl << endl;
 				if(account[inp_acc-1].login(key) == 0){
-					textcolor(LIGHTGREEN);
-					prt("Login success!!", wherey()+2);
+					rlutil::setColor(LIGHTGREEN);
+					prt("Login success!!");
 					getch();
 					goto acc_success;
 				}
 				else{
-					textcolor(LIGHTRED);
-					prt("Invalid key!! Please retry, enter ~ to quit", wherey()+2);
+					rlutil::setColor(LIGHTRED);
+					prt("Invalid key!! Please retry, enter ~ to quit");
 					getch();
 					goto pass;
 				}
@@ -151,14 +156,16 @@ int main(){
 				goto exit;
 			}
 			if(ch=='\b'){
-				cprintf("%c", '\b');
+				cout << '\b';
+				cout << ' ';
+				cout << '\b';
 				counter--;
 				continue;
 			}
 			if(isalpha(ch)){
 				key[counter] = ch;
-				textcolor(YELLOW);
-				cprintf("%c",'*');
+				rlutil::setColor(YELLOW);
+				cout << '*';
 				counter++;
 			}
 			else{
@@ -173,11 +180,12 @@ int main(){
 	{
 		char holder[30], key[7];
 
-		clrscr();
+		rlutil::cls();
 		frame();
-		prt("Opening new account", 9);
-		prt("Enter account holder name(max 30 letters)", wherey()+1);
-		gotoxy(w/2 - 12, wherey()+1);
+		gotoxy(0,9);
+		prt("Opening new account"); cout << endl;
+		prt("Enter account holder name(max 30 letters)");
+		gotoxy(w/2 - 12, 11);
 		int counter = 0;
 		for(int i=0; i<999; i++){
 			if(counter>28){
@@ -190,26 +198,29 @@ int main(){
 				}
 			}
 			if(ch=='\b'){
-				cprintf("%c", '\b');
+				cout << '\b';
+				cout << ' ';
+				cout << '\b';
 				counter--;
 				continue;
 			}
 			if(isalpha(ch) || ch == ' '){
 				holder[counter++] = ch;
-				cprintf("%c", ch);
+				cout << ch;
 			}
 			else{
 				continue;
 			}
 		}
 
-		clrscr();
+		rlutil::cls();
 		frame();
-		prt("Opening new account", 9);
-		prt("Enter account key(6 letters)", wherey()+1);
-		gotoxy(w/2 - 3, wherey()+1);
+		gotoxy(0,9);
+		prt("Opening new account"); cout << endl;
+		prt("Enter account key(6 letters)"); cout << endl;
+
 		counter = 0;
-		for(i=0; i<999; i++){
+		for(int j=0; j<999; j++){
 			if(counter>5){
 				char b[7];
 				for(int k=0; k<6; k++){
@@ -218,23 +229,27 @@ int main(){
 				b[6] = (char) 0;
 				Account acc(holder, b);
 				account[max_acc - 1] = acc;
-				textcolor(LIGHTGRAY);
-				prt("Account opened with account number ", wherey()+2);
-				textcolor(WHITE);
-				acc.getacc();
+				account[max_acc - 1].encrypt();
+				rlutil::setColor(WHITE);
+				cout << endl << endl;
+				prt("Account opened with account number ");
+				rlutil::setColor(WHITE);
+				cout << acc.getacc();
 				getch();
 				break;
 			}
 			char ch = getch();
 			if(ch=='\b'){
-				cprintf("%c", '\b');
+				cout << '\b';
+				cout << ' ';
+				cout << '\b';
 				counter--;
 				continue;
 			}
 			if(ch>=65 && ch<=122){
 				key[counter++] = ch;
-				textcolor(YELLOW);
-				cprintf("%c",'*');
+				rlutil::setColor(YELLOW);
+				cout << '*';
 			}
 			else{
 				continue;
@@ -246,34 +261,36 @@ int main(){
 
 	acc_success:
 	{
-		double amount;
+		ll amount;
 
-		clrscr();
+		rlutil::cls();
 		frame();
-		prt("Accessing account #", 2);
-		account[inp_acc-1].getacc();
-		prt("Account Holder", wherey()+1);
-		gotoxy(w/2 - 8, wherey()+1);
-		textcolor(WHITE);
-		account[inp_acc-1].getname();
-		gotoxy(w/2 - 17, wherey()+1);
-		cprintf("%s", "Balance  Rs. ");
-		account[inp_acc-1].getbal();
+		gotoxy(0,2);
+		prt("Accessing account #");
+		account[inp_acc-1].getacc(); cout << endl;
+		prt("Account Holder"); cout << endl;
+		rlutil::setColor(WHITE);
+		prt(account[inp_acc-1].getname()); cout << endl;
+		rlutil::setColor(LIGHTBLUE);
+        string bal_prt = "Balance Rs. ";
+		bal_prt = bal_prt.append(to_string(account[inp_acc-1].getbal()));
+		prt(bal_prt);
 
-		prt("Choose desired task", wherey()+2);
-		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
-		cprintf("%s", "1. Deposit money");
-		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
-		cprintf("%s", "2. Withdraw money");
-		gotoxy(((w - strlen("Choose desired task"))/2+1), wherey()+1);
-		cprintf("%s", "3. Log out");
+		cout << endl << endl;
+		prt("Choose desired task");
+		gotoxy(((w - strlen("Choose desired task"))/2+1), 8);
+		cout << "1. Deposit money";
+		gotoxy(((w - strlen("Choose desired task"))/2+1), 9);
+		cout << "2. Withdraw money";
+		gotoxy(((w - strlen("Choose desired task"))/2+1), 10);
+		cout << "3. Log out";
 
 		int inp2 = getch();
 
 		switch(inp2){
 		case 49:
-			prt("Enter amount", wherey()+2);
-			gotoxy(w/2 - 3, wherey()+1);
+		    cout << endl << endl;
+			prt("Enter amount ");
 			cin >> amount;	cin.ignore(100, '\n');
 			account[inp_acc-1].trans(abs(amount));
 			getch();
@@ -282,15 +299,16 @@ int main(){
 			account[inp_acc-1].encrypt();
 			goto start;
 		case 50:
-			prt("Enter amount", wherey()+2);
-			gotoxy(w/2 - 3, wherey()+1);
+		    cout << endl << endl;
+			prt("Enter amount ");
 			cin >> amount;	cin.ignore(100, '\n');
 			account[inp_acc-1].trans(-abs(amount));
 			getch();
 			goto acc_success;
 		default:
-			textcolor(LIGHTRED);
-			prt("Invalid choice!!", wherey()+2);
+		    cout << endl << endl;
+			rlutil::setColor(LIGHTRED);
+			prt("Invalid choice!!");
 			getch();
 			goto acc_success;
 		}
@@ -301,54 +319,57 @@ int main(){
 	return 0;
 }
 
-void Account::Account(char * hld, char * pass){
+Account::Account(char * hld, char * pass){
 	for(int i=0; i<30; i++){
 		holder[i] = hld[i];
 	}
-	for(i=0; i<7; i++){
-		key[i] = pass[i];
+	for(int j=0; j<7; j++){
+		key[j] = pass[j];
 	}
 	acc_num = ++max_acc;
 	bal = 0;
 }
 
-void Account::trans(double a){
+void Account::trans(ll a){
+    cout << endl << endl;
 	if(a<0){
 		if(bal<abs(a)){
-			textcolor(LIGHTRED);
-			prt("Withdrawl fail! Invalid amount!", wherey() + 2);
+			rlutil::setColor(LIGHTRED);
+			prt("Withdrawl fail! Invalid amount!");
 			getch();
 			goto ex;
 		}
 	}
 	bal += a;
 	if(a>0){
-		textcolor(LIGHTGREEN);
-		prt("Deposit successful!", wherey() + 2);
+		rlutil::setColor(LIGHTGREEN);
+		prt("Deposit successful!");
 	}
 	else if(a<0){
-		textcolor(LIGHTGREEN);
-		prt("Withdrawl successful!", wherey() + 2);
+		rlutil::setColor(LIGHTGREEN);
+		prt("Withdrawl successful!");
 	}
 
-	prt("New balance is", wherey()+2);
-	gotoxy((w/2 - 8), wherey()+1);
-	cout << "Rs. ";
-	//setw(9);
-	cout << bal;
+	cout << endl << endl;
+	{
+	    string s = "New balance is Rs. ";
+        s = s.append(to_string(bal));
+        prt(s);
+	}
 	ex:
+	    ;
 }
 
-void Account::getname(){
-	cprintf("%s", holder);
+string Account::getname(){
+	return string (holder);
 }
 
-void Account::getacc(){
-	cout << acc_num;
+unsigned Account::getacc(){
+	return acc_num;
 }
 
-void Account::getbal(){
-	cout << bal;
+ll Account::getbal(){
+	return bal;
 }
 
 int Account::login(char * a){
@@ -401,36 +422,16 @@ void init(){
 }
 
 void wrap(){
-	int hld_file, key_file, bal_file;
-
-	if ((hld_file = open("HOLDER.TXT", O_RDONLY | O_APPEND,
-					  S_IREAD | S_IWRITE)) == -1)
-	{
-		printf("Error opening file.\n");
-	}
-	if ((key_file = open("KEY.TXT", O_RDONLY | O_APPEND,
-					  S_IREAD | S_IWRITE)) == -1)
-	{
-		printf("Error opening file.\n");
-	}
-	if ((bal_file = open("BAL.TXT", O_RDONLY | O_APPEND,
-					  S_IREAD | S_IWRITE)) == -1)
-	{
-	  printf("Error opening file.\n");
-	}
-
-	write(hld_file, account[max_acc-1].holder, strlen(account[max_acc-1].holder));
-	write(key_file, account[max_acc-1].key, strlen(account[max_acc-1].key));
-	char buff[65];
-	itoa(account[max_acc-1].bal, buff, 10);
-	write(bal_file, buff, strlen(buff));
+    ;
 
 }
 
-void prt(const char * a, int b){
-	gotoxy((w-strlen(a))/2, b);
-	cprintf("%s", a);
-	textcolor(LIGHTGRAY);
+void prt(string str){
+	int width = rlutil::tcols();
+
+    cout << '*' << string( (width-str.size())/2, ' ' ) << str;
+
+    rlutil::setColor(WHITE);
 }
 
 void frame()
@@ -441,14 +442,14 @@ void frame()
 		cout << '*';
 	}
 
-	for(i = 2; i <= h - 2; i++)
+	for(int i = 2; i <= h - 2; i++)
 	{
 		gotoxy(1, i); cout << '*';
 		gotoxy(w, i); cout << '*';
 	}
 
 	gotoxy(1, h - 1);
-	for(i = 0; i < w; i++)
+	for(int i = 0; i < w; i++)
 	{
 		cout << '*';
 	}
