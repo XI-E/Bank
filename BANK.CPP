@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <string>
+#include <cstring>
 #include <ctype.h>
 #include <math.h>
 #include "rlutil.h"
@@ -15,7 +16,11 @@ using namespace rlutil;
 
 class Account{
 	public:
-		Account(void){};            // Default constructor
+		Account(void){              // Default constructor
+            strcpy(holder, "NoHolder");
+            strcpy(key, "aaaaaa");
+            bal = 0;
+		};
 		Account(char *, char *);    // Initialising constructor
 
 		friend void init();         // gets data from files
@@ -43,7 +48,7 @@ class Account{
 
 Account account[100];
 
-int max_acc = 0, max_acc_prev;      // Currently opened accounts(total)
+int max_acc = 0;                    // Currently opened accounts(total)
 
 int h,w;							// Height and width of screen
 
@@ -246,7 +251,14 @@ int main(){
 				counter--;
 				continue;
 			}
-			if(ch>=65 && ch<=122){
+			else if(ch==(char) 127){
+                cout << (char) 127;
+                cout << ' ';
+                cout << (char) 127;
+                counter--;
+                continue;
+			}
+			if(isalpha(ch)){
 				key[counter++] = ch;
 				rlutil::setColor(YELLOW);
 				cout << '*';
@@ -412,18 +424,50 @@ void Account::encrypt(){
 }
 
 void init(){
+    ifstream hld ("holder.txt", ios_base::in);
+    ifstream pass ("pass.txt", ios_base::in);
+    ifstream balance ("balance.txt", ios_base::in);
 
+    for(int i=0; i<100; i++){
+        string h,k,b;
+        getline(hld, h);
+        getline(pass, k);
+        getline(balance, b);
+
+        if(strncmp(h.c_str(), "NoHolder", 8) != 0){
+            strcpy(account[i].holder, h.c_str());
+            strcpy(account[i].key, k.c_str());
+            char *pEnd;
+            account[i].bal = strtoll(b.c_str(), &pEnd , 10);
+            ++max_acc;
+        }
+    }
+
+/*
 	strcpy(account[0].holder, "Sankalp Gambhir");
 	strcpy(account[0].key, "abcdef");
 	account[0].acc_num = 1;
 	account[0].bal = 10000;
 	max_acc = 1;
 	account[0].encrypt();
+*/
+
 }
 
 void wrap(){
-    ;
+    ofstream hld ("holder.txt", ios_base::trunc);
+    ofstream pass ("pass.txt", ios_base::trunc);
+    ofstream balance ("balance.txt", ios_base::trunc);
 
+    for(int i=0; i<100; i++){
+        hld << string (account[i].holder) << '\n';
+        pass << string (account[i].key) << '\n';
+        balance << account[i].bal << '\n';
+    }
+
+    hld.close();
+    pass.close();
+    balance.close();
 }
 
 void prt(string str){
