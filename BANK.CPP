@@ -1,3 +1,21 @@
+/*
+	-----------------------------------------------
+	Berry Bank
+	-----------------------------------------------
+	Simple bank program
+	
+	Reads account data from files, allows deposits,
+	withdrawls and opening new accounts.
+	The data for the accounts is stored encrypted
+	to ensure privacy of account holders using 
+	custom encryption algorithm.
+	The accounts use a user generated 6 letter key
+	for decrypting account data, which also serves
+	as a password.
+		
+	-----------------------------------------------
+*/
+
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
@@ -23,16 +41,22 @@ class Account{
 		};
 		Account(char *, char *);    // Initialising constructor
 
-		friend void init();         // gets data from files
-		friend void wrap();			// writes changed data to files
-		friend void prt(string);
-		string getname();           // returns name of account holder
-		unsigned getacc();          // returns account number
-		ll getbal();                // returns balance
+		friend void init();         // Gets data from files
+		friend void wrap();			// Writes changed data to files
+		friend void prt(string);	// Prints inputted string to the center of the screen
+		string getname();           // Returns name of account holder
+		unsigned getacc();          // Returns account number
+		ll getbal();                // Returns balance
 		void trans(long long);      // Alters balance for deposit/withdrawl
-		void encrypt();				// Re-encrypts data for storage
 		int login(char *);          // Decrypts name and balance as per given key
-		void operator = (Account & a){
+		void encrypt();				// Re-encrypts data for storage
+		
+		void operator = (Account & a){ 
+		/* 
+        Overloaded '=' operator
+        Takes an 'Account' reference, copies data from it
+        and pastes it into the Lvalue reference given
+        */
 			strcpy(holder, a.holder);
 			strcpy(key, a.key);
 			bal = a.bal;
@@ -40,19 +64,19 @@ class Account{
 		}
 
 	private:
-		char holder[30];             // ENCRYPTED till login()
+		char holder[30];             // Account holder name [ENCRYPTED]
 		unsigned acc_num;            // Account number
 		ll bal;                      // Current account balance [ENCRYPTED]
 		char key[7];                 // Holds encryption key for account(basically, password)
 };
 
-Account account[100];
+Account account[100];				 // Store all account data, supporting a maximum of 100
 
-int max_acc = 0;                    // Currently opened accounts(total)
+int max_acc = 0;                   	 // Currently opened accounts(total)
 
-int h,w;							// Height and width of screen
+int h,w;							 // Height and width of screen
 
-int inp_acc;			    		// accessed account number
+int inp_acc;			    	  	 // Account number of acocunt being accessed
 
 void init();
 void wrap();
@@ -78,10 +102,13 @@ int main(){
 	cout << endl;
 	prt("Welcome to ABC Bank!"); cout << endl;
 	prt("Please choose desired option");
+	
 	gotoxy(((w - strlen("Please choose desired option"))/2+1), 11);
 	cout << "1. Access account";
+	
 	gotoxy(((w - strlen("Please choose desired option"))/2+1), 12);
 	cout << "2. Open account";
+	
 	gotoxy(((w - strlen("Please choose desired option"))/2+1), 13);
 	cout << "3. Quit" << endl << endl;
 	prt("Enter choice : ");
@@ -102,9 +129,105 @@ int main(){
 			goto start;
 	}
 
+	
+	open:
+	{
+		char holder[30], key[7];	// User inputted data for new account
+
+		rlutil::cls();
+		frame();
+		gotoxy(0,9);
+		prt("Opening new account"); cout << endl;
+		prt("Enter account holder name(max 30 letters)");
+		gotoxy(w/2 - 12, 11);
+		int counter = 0;
+		for(int i=0; i<999; i++){
+			if(counter>28){
+				break;
+			}
+			char ch = getch();
+			if(ch=='\n' || ch=='\r'){
+				if(counter > 0){
+					break;
+				}
+			}
+			if(ch=='\b'){
+				cout << '\b';
+				cout << ' ';
+				cout << '\b';
+				counter--;
+				continue;
+			}
+			if(isalpha(ch) || ch == ' '){
+				// Ignores non-alphabetic input, accepts only spaces
+				holder[counter++] = ch;
+				cout << ch;
+			}
+			else{
+				continue;
+			}
+		}
+
+		rlutil::cls();
+		frame();
+		gotoxy(0,9);
+		prt("Opening new account"); cout << endl;
+		prt("Enter account key(6 letters)"); cout << endl;
+
+		counter = 0;
+		for(int j=0; j<999; j++){
+			if(counter>5){
+				char b[7];
+				for(int k=0; k<6; k++){
+					b[k] = key[k];
+				}
+				// Filters possible garbage captured from input buffer
+				b[6] = (char) 0;
+				Account acc(holder, b);
+				// Uses overloaded '=' operator to copy account data
+				account[max_acc - 1] = acc;
+				// Encrypt data of new account for storage
+				account[max_acc - 1].encrypt();
+				rlutil::setColor(WHITE);
+				cout << endl << endl;
+				prt("Account opened with account number ");
+				rlutil::setColor(WHITE);
+				cout << acc.getacc();
+				getch();
+				break;
+			}
+			char ch = getch();
+			if(ch=='\b'){
+				cout << '\b';
+				cout << ' ';
+				cout << '\b';
+				counter--;
+				continue;
+			}
+			else if(ch==(char) 127){
+                cout << (char) 127;
+                cout << ' ';
+                cout << (char) 127;
+                counter--;
+                continue;
+			}
+			if(isalpha(ch)){
+				// Ignores non-alphabetic input
+				key[counter++] = ch;
+				rlutil::setColor(YELLOW);
+				cout << '*';
+			}
+			else{
+				continue;
+			}
+		}
+
+		goto start;
+	}
+
 	access:
 	{
-		char key[7];
+		char key[7];		// User inputted 6 letter password
 		rlutil::cls();
 		frame();
 		gotoxy(0,9);
@@ -168,6 +291,7 @@ int main(){
 				continue;
 			}
 			if(isalpha(ch)){
+				// Ignores non-alphabetic input
 				key[counter] = ch;
 				rlutil::setColor(YELLOW);
 				cout << '*';
@@ -179,96 +303,6 @@ int main(){
 
 		}
 
-	}
-
-	open:
-	{
-		char holder[30], key[7];
-
-		rlutil::cls();
-		frame();
-		gotoxy(0,9);
-		prt("Opening new account"); cout << endl;
-		prt("Enter account holder name(max 30 letters)");
-		gotoxy(w/2 - 12, 11);
-		int counter = 0;
-		for(int i=0; i<999; i++){
-			if(counter>28){
-				break;
-			}
-			char ch = getch();
-			if(ch=='\n' || ch=='\r'){
-				if(counter > 0){
-					break;
-				}
-			}
-			if(ch=='\b'){
-				cout << '\b';
-				cout << ' ';
-				cout << '\b';
-				counter--;
-				continue;
-			}
-			if(isalpha(ch) || ch == ' '){
-				holder[counter++] = ch;
-				cout << ch;
-			}
-			else{
-				continue;
-			}
-		}
-
-		rlutil::cls();
-		frame();
-		gotoxy(0,9);
-		prt("Opening new account"); cout << endl;
-		prt("Enter account key(6 letters)"); cout << endl;
-
-		counter = 0;
-		for(int j=0; j<999; j++){
-			if(counter>5){
-				char b[7];
-				for(int k=0; k<6; k++){
-					b[k] = key[k];
-				}
-				b[6] = (char) 0;
-				Account acc(holder, b);
-				account[max_acc - 1] = acc;
-				account[max_acc - 1].encrypt();
-				rlutil::setColor(WHITE);
-				cout << endl << endl;
-				prt("Account opened with account number ");
-				rlutil::setColor(WHITE);
-				cout << acc.getacc();
-				getch();
-				break;
-			}
-			char ch = getch();
-			if(ch=='\b'){
-				cout << '\b';
-				cout << ' ';
-				cout << '\b';
-				counter--;
-				continue;
-			}
-			else if(ch==(char) 127){
-                cout << (char) 127;
-                cout << ' ';
-                cout << (char) 127;
-                counter--;
-                continue;
-			}
-			if(isalpha(ch)){
-				key[counter++] = ch;
-				rlutil::setColor(YELLOW);
-				cout << '*';
-			}
-			else{
-				continue;
-			}
-		}
-
-		goto start;
 	}
 
 	acc_success:
@@ -331,99 +365,24 @@ int main(){
 	return 0;
 }
 
-Account::Account(char * hld, char * pass){
-	for(int i=0; i<30; i++){
-		holder[i] = hld[i];
-	}
-	for(int j=0; j<7; j++){
-		key[j] = pass[j];
-	}
-	acc_num = ++max_acc;
-	bal = 0;
-}
 
-void Account::trans(ll a){
-    cout << endl << endl;
-	if(a<0){
-		if(bal<abs(a)){
-			rlutil::setColor(LIGHTRED);
-			prt("Withdrawl fail! Invalid amount!");
-			getch();
-			goto ex;
-		}
-	}
-	bal += a;
-	if(a>0){
-		rlutil::setColor(LIGHTGREEN);
-		prt("Deposit successful!");
-	}
-	else if(a<0){
-		rlutil::setColor(LIGHTGREEN);
-		prt("Withdrawl successful!");
-	}
+/*
+	*****************************************
+			   Function definitions
+	*****************************************
+*/
 
-	cout << endl << endl;
-	{
-	    string s = "New balance is Rs. ";
-        s = s.append(to_string(bal));
-        prt(s);
-	}
-	ex:
-	    ;
-}
-
-string Account::getname(){
-	return string (holder);
-}
-
-unsigned Account::getacc(){
-	return acc_num;
-}
-
-ll Account::getbal(){
-	return bal;
-}
-
-int Account::login(char * a){
-	int match = 0;
-	int i,j;
-	char b[6];
-	for(int k=0; k<6; k++){
-		b[k] = a[k];
-	}
-	b[6] = (char) 0;
-
-	if(strncmp(b, key, 6) == 0){
-		match++;
-	}
-
-	if(match == 1){
-		goto decrypt;
-	}
-	else{
-		return 1;
-	}
-
-	decrypt:
-			for(j=0; j<30; j++){
-				int m = j%7;
-				char d = key[m];
-				holder[j] -= (int) d;
-				bal -= (int) d;
-			}
-			return 0;
-}
-
-void Account::encrypt(){
-	for(int j=0; j<30; j++){
-		int m = j%7;
-		char d = key[m];
-		holder[j] += (int) d;
-		bal += (int) d;
-	}
-}
-
-void init(){
+void init(){                     
+	/*
+	Initializes the program, obtains account data from files
+	Opens files 
+		holder.txt		Account holder names
+		pass.txt		Account keys
+		balance.txt 	Account balances
+	Reads data and stores them into account[] objects
+	Terminates read if default holder 'NoHolder' is reached
+	*/
+	
     ifstream hld ("holder.txt", ios_base::in);
     ifstream pass ("pass.txt", ios_base::in);
     ifstream balance ("balance.txt", ios_base::in);
@@ -454,32 +413,11 @@ void init(){
 
 }
 
-void wrap(){
-    ofstream hld ("holder.txt", ios_base::trunc);
-    ofstream pass ("pass.txt", ios_base::trunc);
-    ofstream balance ("balance.txt", ios_base::trunc);
-
-    for(int i=0; i<100; i++){
-        hld << string (account[i].holder) << '\n';
-        pass << string (account[i].key) << '\n';
-        balance << account[i].bal << '\n';
-    }
-
-    hld.close();
-    pass.close();
-    balance.close();
-}
-
-void prt(string str){
-	int width = rlutil::tcols();
-
-    cout << '*' << string( (width-str.size())/2, ' ' ) << str;
-
-    rlutil::setColor(WHITE);
-}
-
-void frame()
-{
+void frame(){                         
+	/* 
+		Generates a frame at the edges of the screen
+	*/
+	
 	gotoxy(1,1);
 	for(int i = 0; i < w; i++)
 	{
@@ -498,3 +436,177 @@ void frame()
 		cout << '*';
 	}
 }
+
+void prt(string str){                 
+	/* 
+	Prints given string at the center of the current line
+	Uses preset color using setColor() function of rlutil.h
+	Resets color to WHITE for further processing
+	*/
+	
+	int width = rlutil::tcols();
+
+    cout << '*' << string( (width-str.size())/2, ' ' ) << str;
+
+    rlutil::setColor(WHITE);
+}
+
+void wrap(){                       
+	/* 
+	Ends the program, writes data back into files
+	Opens files 
+		holder.txt		Account holder names
+		pass.txt		Account keys
+		balance.txt 	Account balances
+	Truncates already present data
+	To the empty file, all data is written, even for empty accounts
+	Holder name and balance are stored encrypted
+	*/
+	
+    ofstream hld ("holder.txt", ios_base::trunc);
+    ofstream pass ("pass.txt", ios_base::trunc);
+    ofstream balance ("balance.txt", ios_base::trunc);
+
+    for(int i=0; i<100; i++){
+        hld << string (account[i].holder) << '\n';
+        pass << string (account[i].key) << '\n';
+        balance << account[i].bal << '\n';
+    }
+
+    hld.close();
+    pass.close();
+    balance.close();
+}
+
+
+/*
+	*****************************************
+	Definitions of functions of class Account
+	*****************************************
+*/
+
+Account::Account(char * hld, char * pass){
+	/*
+    Creates an instance of the class Account (constructor)
+    Initializes holder name and password as per given values
+    Initializes account balance as 0
+    Initializes account number as one more than the number of maximum accounts
+    while incrementing the maximum number of accounts
+    */
+	
+	for(int i=0; i<30; i++){
+		holder[i] = hld[i];
+	}
+	for(int j=0; j<7; j++){
+		key[j] = pass[j];
+	}
+	acc_num = ++max_acc;
+	bal = 0;
+}
+
+string Account::getname(){      // Returns account holder name(private entity)
+	return string (holder);
+}
+
+unsigned Account::getacc(){     // Returns account number(private entity)
+	return acc_num;
+}
+
+ll Account::getbal(){           // Returns account balance(private entity)
+	return bal;
+}
+
+void Account::trans(ll a){        
+	/* 
+    Carries out transactions, takes amount as input and 
+	an integer, positive for deposit, negative for withdrawl
+	Prints 'Withdrawl failure' if withdrawl is opted & balance
+	is less than given amount
+	*/
+	
+    cout << endl << endl;
+	if(a<0){
+		if(bal<abs(a)){
+			rlutil::setColor(LIGHTRED);
+			prt("Withdrawl fail! Invalid amount!");
+			getch();
+			goto ex;
+		}
+	}
+	bal += a;
+	if(a>0){
+		rlutil::setColor(LIGHTGREEN);
+		prt("Deposit successful!");
+	}
+	else if(a<0){
+		rlutil::setColor(LIGHTGREEN);
+		prt("Withdrawl successful!");
+	}
+
+	cout << endl << endl;
+	{
+	    string s = "New balance is Rs. ";
+        s = s.append(to_string(bal));
+        prt(s);
+	}
+	ex:
+	    ;
+}
+
+int Account::login(char * a){
+    /* 
+	Checks given password against account key
+	Uses strncmp(char *, char *, int) to compare only 6 letters
+	Ignores garbage data that might have been captured from stream
+	by ignoring anything after the 6 letters of key
+	Returns 0 on success, 1 on failure
+	*/
+	
+	int match = 0;
+	int i,j;
+	char b[6];
+	for(int k=0; k<6; k++){
+		b[k] = a[k];
+	}
+	b[6] = (char) 0;
+
+	if(strncmp(b, key, 6) == 0){
+		match++;
+	}
+
+	if(match == 1){
+		goto decrypt;
+	}
+	else{
+		return 1;
+	}
+
+	decrypt:
+			for(j=0; j<30; j++){
+				int m = j%7;
+				char d = key[m];
+				holder[j] -= (int) d;
+				bal -= (int) d;
+			}
+			return 0;
+}
+
+void Account::encrypt(){              
+	/* 
+	Encrypts account holder name and balance for storage
+	Uses the user-defined key
+	It adds the (int) value of a letter of the key
+	to both holder name and balance
+	In the holder name(char *), each letter is altered
+	In the balance(double), the effect compounds with each loop
+	*/
+	
+	for(int j=0; j<30; j++){
+		int m = j%7;
+		char d = key[m];
+		holder[j] += (int) d;
+		bal += (int) d;
+	}
+}
+
+//end-of-file
